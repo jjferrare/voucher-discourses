@@ -1,0 +1,226 @@
+---
+title: "Project Directory Setup"
+author: "Your Name"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = TRUE,
+  message = TRUE
+)
+```
+
+## Overview
+
+This document initializes the directory structure and metadata files for the school choice policy discourse analysis project. The current focus is on the pilot phase analyzing Utah legislative committee meetings, while maintaining an expandable structure for additional data sources.
+
+## Load Required Packages
+
+```{r packages}
+library(tidyverse)
+library(fs)
+library(here)
+library(glue)
+
+# Source project configuration
+source(here("setup", "config.R"))
+```
+
+## Create Project Structure
+
+First, let's verify and create our project directories:
+
+```{r create_structure}
+# Function to create and verify directories
+setup_project_structure <- function() {
+  # Create all directories from config
+  walk(unlist(CONFIG$project$dirs), ~dir_create(.x))
+  
+  # Create data source directories for each state
+  for (source in names(CONFIG$project$data_sources)) {
+    for (state in CONFIG$project$states$pilot) {  # Just pilot state for now
+      source_dirs <- unlist(CONFIG$project$data_sources[[source]])
+      walk(source_dirs, ~dir_create(path(.x, state)))
+    }
+  }
+  
+  # Return all created paths for verification
+  list(
+    core_dirs = unlist(CONFIG$project$dirs),
+    source_dirs = unlist(CONFIG$project$data_sources)
+  )
+}
+
+# Create directories and display results
+created_dirs <- setup_project_structure()
+```
+
+## Initialize Metadata Files
+
+Create metadata tracking files for the pilot phase:
+
+```{r create_metadata}
+# Function to initialize metadata files
+initialize_metadata_files <- function() {
+  # Create legislative meetings index
+  legislative_index <- tibble(
+    !!!map(CONFIG$metadata$legislative_cols, ~vector(mode = .x, length = 0))
+  )
+  
+  # Create download tracking log
+  download_log <- tibble(
+    meeting_id = character(),
+    state = character(),
+    attempt_timestamp = as.POSIXct(character()),
+    status = character(),
+    error_message = character(),
+    download_duration_seconds = numeric(),
+    file_hash = character(),
+    file_path = character()
+  )
+  
+  # Save files
+  write_csv(
+    legislative_index,
+    path(CONFIG$project$dirs$metadata, "legislative_meetings.csv")
+  )
+  
+  write_csv(
+    download_log,
+    path(CONFIG$project$dirs$metadata, "download_log.csv")
+  )
+  
+  # Return file paths for verification
+  list(
+    legislative = path(CONFIG$project$dirs$metadata, "legislative_meetings.csv"),
+    download_log = path(CONFIG$project$dirs$metadata, "download_log.csv")
+  )
+}
+
+# Create metadata files
+metadata_files <- initialize_metadata_files()
+```
+
+## Validate Setup
+
+Check that everything was created correctly:
+
+```{r validate}
+# Function to validate the setup
+validate_setup <- function() {
+  validation_results <- list()
+  
+  # Check directories
+  all_dirs <- c(
+    unlist(CONFIG$project$dirs),
+    unlist(CONFIG$project$data_sources)
+  )
+  
+  validation_results$directories <- tibble(
+    path = all_dirs,
+    exists = dir_exists(path),
+    is_directory = is_dir(path)
+  )
+  
+  # Check metadata files
+  metadata_files <- c(
+    "legislative_meetings.csv",
+    "download_log.csv"
+  )
+  
+  validation_results$metadata <- tibble(
+    file = metadata_files,
+    path = path(CONFIG$project$dirs$metadata, file),
+    exists = file_exists(path)
+  )
+  
+  validation_results
+}
+
+# Run validation
+validation <- validate_setup()
+
+# Display results
+cat("\nDirectory Validation:\n")
+print(validation$directories)
+
+cat("\nMetadata File Validation:\n")
+print(validation$metadata)
+```
+
+## Test File Naming Convention
+
+Verify the file naming convention works as expected:
+
+```{r test_naming}
+# Create example meeting data
+example_meeting <- list(
+  state = CONFIG$utah$state$abbreviation,
+  date = Sys.Date(),
+  chamber = CONFIG$utah$state$chamber,
+  committee_abbrev = CONFIG$utah$state$committee$abbreviation,
+  meeting_id = 1
+)
+
+# Generate test filename
+test_filename <- glue(
+  CONFIG$filename$legislative$pattern,
+  state = example_meeting$state,
+  year = format(example_meeting$date, "%Y"),
+  month = format(example_meeting$date, "%m"),
+  day = format(example_meeting$date, "%d"),
+  chamber = example_meeting$chamber,
+  committee = example_meeting$committee_abbrev,
+  id = str_pad(
+    example_meeting$meeting_id, 
+    width = CONFIG$filename$legislative$padding$id, 
+    pad = "0"
+  )
+)
+
+cat("\nExample filename:", test_filename, "\n")
+```
+
+## Display Project Structure
+
+Show the complete project structure:
+
+```{r show_structure}
+# Function to display directory structure
+print_dir_structure <- function(path, prefix = "") {
+  # List contents
+  contents <- dir_ls(path)
+  
+  # Process each item
+  for (item in contents) {
+    # Skip certain files/directories
+    if (basename(item) %in% c(".git", ".Rproj.user", ".Rhistory")) {
+      next
+    }
+    
+    # Print item
+    cat(prefix, "├── ", basename(item), 
+        if (dir_exists(item)) "/" else "", "\n", sep = "")
+    
+    # Recurse if directory
+    if (dir_exists(item)) {
+      print_dir_structure(item, paste0(prefix, "│   "))
+    }
+  }
+}
+
+cat("Project Structure:\n")
+print_dir_structure(here())
+```
+
+## Session Information
+
+```{r session_info}
+sessionInfo()
+```
