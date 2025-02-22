@@ -1,4 +1,30 @@
+R specific
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
+*.Rproj
+Data directories
+data/raw/*
+data/processed/*
+data/metadata/*.csv
+Rendered R Markdown
+*.html
+*.pdf
+*.docx
+Audio/Video files
+*.mp3
+*.mp4
+*.wav
+System specific
+.DS_Store
+Thumbs.db
+Temporary files
+*.tmp
+*~
+*.swp
+Log files
+*.log
+Environment variables
+.env
+.Renviron
