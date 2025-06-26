@@ -1,6 +1,6 @@
 ---
 title: "Project Directory Setup"
-author: "Your Name"
+author: "Joseph J Ferrare"
 date: "`r Sys.Date()`"
 output: 
   html_document:
@@ -34,7 +34,7 @@ source(here("setup", "config.R"))
 
 ## Create Project Structure
 
-First, let's verify and create our project directories:
+First, verify and create the project directories:
 
 ```{r create_structure}
 # Function to create and verify directories

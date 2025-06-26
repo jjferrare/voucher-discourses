@@ -206,3 +206,4 @@ CONFIG <- list(
 
 # Validate project structure when config is sourced
 validate_project_structure()
+
